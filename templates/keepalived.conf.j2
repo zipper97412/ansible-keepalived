@@ -1,29 +1,56 @@
- ! Configuration File for keepalived
-global_defs {
-}
-vrrp_script chk_service {           # Requires keepalived-1.1.13
-        script "killall -0 {{ keepalived_check_process }}"     # cheaper than pidof
-        interval 2                      # check every 2 seconds
-        weight 2                        # add 2 points of prio if OK
-}
-vrrp_instance VI_1 {
-    state {{ keepalived_role }}
-    interface {{ keepalived_shared_iface }}
-    virtual_router_id {{ keepalived_router_id }}
-    {% if keepalived_role.lower() == "master" %}
-    priority {{ keepalived_priority }}
-    {% else %}
-    priority {{ keepalived_backup_priority }}
-    {% endif %}   
-    advert_int 1
+
+{# ansible fw -c local -m template -a "src=./plays/roles/tcomerma.keepalived/templates/keepalived.conf.j2 dest=./test.txt" #}
+
+{% for group in vrrp_sync_group %}
+vrrp_sync_group {{ group.name }} {
+    group {
+        {% for g in group.group %}
+        {{ g }}
+        {% endfor %}
+    }
+    {% if group.notify_master is defined %}
+    notify_master "{{ group.notify_master }}"
+    {% endif %}
+    {% if group.notify_backup is defined %}
+    notify_backup "{{ group.notify_backup }}"
+    {% endif %}
+    {% if group.notify_fault is defined %}
+    notify_fault "{{ group.notify_fault }}"
+    {% endif %}
+    }
+{% endfor %}
+
+
+{% for instance in vrrp_instances %}
+vrrp_instance {{ instance.name }} {
+    interface {{ instance.interface }}
+    state {{ instance.state }}
+    virtual_router_id {{ instance.virtual_router_id }}
+    priority {{ instance.priority }}
+    advert_int {{ instance.advert_int }}
     authentication {
-        auth_type PASS
-        auth_pass {{ keepalived_auth_pass }}
+    auth_type {{ instance.authentication.auth_type }}
+    auth_pass {{ instance.authentication.auth_pass }}
     }
+    {% if instance.lvs_sync_daemon_interface is defined %}
+    lvs_sync_daemon_interface {{ instance.lvs_sync_daemon_interface }}
+    {% endif %}
+    {% if instance.unicast_src_ip is defined %}
+    unicast_src_ip {{ instance.unicast_src_ip }}
+    {% endif %}
+    {% if instance.unicast_peer is defined %}
+    unicast_peer {
+        {{ instance.unicast_peer }}
+    }
+    {% endif %}
     virtual_ipaddress {
-        {{ keepalived_shared_ip }} dev {{ keepalived_shared_iface }} label {{ keepalived_shared_iface }}:0
+        {% for line in instance.virtual_ipaddress %}
+        {{ line.address }} dev {{ line.interface }}
+        {% endfor %}
     }
-        track_script {
-            chk_service
-        }
-}
+    {% if instance.nopreempt %}
+    nopreempt
+    {% endif %}
+    garp_master_delay {{ instance.garp_master_delay }}
+    }
+{% endfor %}
