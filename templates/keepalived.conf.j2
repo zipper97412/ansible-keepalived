@@ -51,6 +51,13 @@ vrrp_instance {{ instance.name }} {
     {% if instance.nopreempt %}
     nopreempt
     {% endif %}
+    {% if instance.virtual_routes is defined %}
+    virtual_routes {
+        {% for route in instance.virtual_routes %}
+        {{ route }}
+        {% endfor %}
+    }
+    {% endif %}
     garp_master_delay {{ instance.garp_master_delay }}
     }
 {% endfor %}
