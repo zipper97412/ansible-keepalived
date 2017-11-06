@@ -4,9 +4,9 @@
 {% for group in vrrp_sync_group %}
 vrrp_sync_group {{ group.name }} {
     group {
-        {% for g in group.group %}
+    {% for g in group.group %}
         {{ g }}
-        {% endfor %}
+    {% endfor %}
     }
     {% if group.notify_master is defined %}
     notify_master "{{ group.notify_master }}"
@@ -17,7 +17,7 @@ vrrp_sync_group {{ group.name }} {
     {% if group.notify_fault is defined %}
     notify_fault "{{ group.notify_fault }}"
     {% endif %}
-    }
+}
 {% endfor %}
 
 
@@ -29,8 +29,8 @@ vrrp_instance {{ instance.name }} {
     priority {{ instance.priority }}
     advert_int {{ instance.advert_int }}
     authentication {
-    auth_type {{ instance.authentication.auth_type }}
-    auth_pass {{ instance.authentication.auth_pass }}
+        auth_type {{ instance.authentication.auth_type }}
+        auth_pass {{ instance.authentication.auth_pass }}
     }
     {% if instance.lvs_sync_daemon_interface is defined %}
     lvs_sync_daemon_interface {{ instance.lvs_sync_daemon_interface }}
@@ -44,20 +44,27 @@ vrrp_instance {{ instance.name }} {
     }
     {% endif %}
     virtual_ipaddress {
-        {% for line in instance.virtual_ipaddress %}
+    {% for line in instance.virtual_ipaddress %}
         {{ line.address }} dev {{ line.interface }}
-        {% endfor %}
+    {% endfor %}
     }
     {% if instance.nopreempt %}
     nopreempt
     {% endif %}
     {% if instance.virtual_routes is defined %}
     virtual_routes {
-        {% for route in instance.virtual_routes %}
+    {% for route in instance.virtual_routes %}
         {{ route }}
-        {% endfor %}
+    {% endfor %}
     }
     {% endif %}
-    garp_master_delay {{ instance.garp_master_delay }}
+
+    track_interface {
+    {% for line in instance.track_interface %}
+        {{ line }}
+    {% endfor %}
     }
+
+    garp_master_delay {{ instance.garp_master_delay }}
+}
 {% endfor %}
