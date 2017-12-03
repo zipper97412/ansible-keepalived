@@ -20,6 +20,13 @@ vrrp_sync_group {{ group.name }} {
 }
 {% endfor %}
 
+{% for script in vrrp_scripts %}
+vrrp_script {{script.name}} {
+{% for line in script.lines %}
+    {{line}}
+{% endfor %}
+}
+{% endfor %}
 
 {% for instance in vrrp_instances %}
 vrrp_instance {{ instance.name }} {
@@ -61,6 +68,12 @@ vrrp_instance {{ instance.name }} {
 
     track_interface {
     {% for line in instance.track_interface %}
+        {{ line }}
+    {% endfor %}
+    }
+
+    track_script {
+    {% for line in instance.track_script %}
         {{ line }}
     {% endfor %}
     }
